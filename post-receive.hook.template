@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+
+# This script is SH-compatible, but it doesn't mean you have to use SH.
+# You can use bash or zsh and enjoy features of more powerful shells, just change the shebang!
+
+# Templates directory should be in .git_tpl/ in the git home directory
+# for example: /srv/git/.git_tpl/
+
+# POST-RECEIVE HOOK
+# DIR: /srv/git/.git_tpl
+# ARGV: empty
+# STDIN: [OLD HEAD] [NEW HEAD] refs/heads/alpha
+
+
+export TERM="xterm-color"
+
+abort()   { printf "\e[1;31m$*\e[0m\n"; exit 1; }
+success() { printf "\e[1;32m$*\e[0m\n"; }
+info()    { printf "\e[1;34m$*\e[0m\n"; }
+debug()   { $DEBUG && printf "\e[1;33m$*\e[0m\n"; }
+
+run()     { info $* ; $*; }
+
+set -- $(cat /dev/stdin)
+
+old=$1 && new=$2 && ref=$3
+export BRANCH=$(basename $ref)
+export DEBUG=true
+export APPLICATION="@@APPLICATION@@"
+export FRAMEWORK="@@FRAMEWORK@@"
+export BASEPATH="/var/www"
+export PUBDIR="@@PUBDIR@@"
+export REPO="/srv/git/$APPLICATION.git"
+export DOCROOT="$BASEPATH/html/$APPLICATION/$BRANCH/$PUBDIR"
+export TARGET="/srv/framework/$FRAMEWORK/application/$APPLICATION/$BRANCH"
+
+# restrict deployment just to given branch
+if [ $BRANCH != @@DEPLOY@@ ] ; then
+    info "Branch $BRANCH isn't supposed to be deployable, finishing"
+    exit
+fi
+
+cd $(dirname $TARGET) # the target might not exist yet
+
+# GIT_DIR is "." which should points to bare repository
+GIT_DIR="$REPO"
+
+info "Reading /etc/profile ..."
+. /etc/profile
+
+is_bare=$(git-config --get --bool core.bare)
+
+if [ -z "$is_bare" ]
+then
+    # for compatibility's sake, guess
+    git_dir_full=$(cd $GIT_DIR; pwd)
+    case $git_dir_full in */.git) is_bare=false;; *) is_bare=true;; esac
+fi
+
+debug
+debug "=== Environment ==="
+debug "PATH: $PATH"
+debug "USER: $USER"
+debug "TERM: $TERM"
+#debug "Ruby version: $(ruby --version)"
+#debug "Ruby path: $(which ruby)"
+debug
+debug "=== Git-deployer ==="
+debug "FRAMEWORK: $FRAMEWORK"
+debug "APPLICATION: $APPLICATION"
+debug "TARGET: $TARGET"
+debug "BRANCH: $BRANCH"
+debug "DOCROOT: $DOCROOT"
+debug "REPO: $REPO"
+debug "PWD: $PWD"
+debug
+
+if [ $FRAMEWORK != "" ] ; then
+    if [ -d $TARGET ] ; then
+      cd $TARGET
+      GIT_DIR="$PWD/.git"
+      info "git_dir: [$GIT_DIR]"
+      info "Updating $BRANCH in `pwd` ... (from $old' to '$new')"
+      umask 002 && git fetch
+      git reset $new --hard
+    else
+      git symbolic-ref HEAD refs/heads/$BRANCH
+      info "Cloning $BRANCH to $(pwd)/$TARGET (HEAD: '$new') ..."
+      umask 002 && git clone $REPO $TARGET
+      cd $TARGET
+      GIT_DIR="$PWD/.git"
+      git symbolic-ref HEAD refs/heads/$BRANCH
+      git reset $new --hard
+      GIT_DIR="$REPO"
+      if [ -x "$REPO/hooks/clone" ] ; then
+        info "[$PWD] Running clone hook"
+        exec "$REPO/hooks/clone"
+      elif [ -f "$REPO/hooks/clone" ] ; then
+        info "Loading clone hook"
+        . "$REPO/hooks/clone" # so user can use functions defined in this hook in his clone hook
+        exit $?
+      else
+        abort "No clone hook found!"
+      fi
+    fi
+else
+    GIT_WORK_TREE=$DOCROOT
+    info "Checkout $BRANCH to: $DOCROOT"
+    umask 002 && git checkout -f $BRANCH
+    cd $GIT_WORK_TREE
+fi
+
+
+# Update hook
+if [ -x "$REPO/hooks/update" ] ; then
+  info "[$PWD] Running update hook"
+  exec "$REPO/hooks/update"
+elif [ -f "$REPO/hooks/update" ] ; then
+  info "Loading update hook"
+  . "$REPO/hooks/update" # so user can use functions defined in this hook in his update hook
+  exit $?
+else
+  abort "No update hook found! in [$PWD]"
+fi
