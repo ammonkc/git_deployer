@@ -3,11 +3,7 @@
 # This script is SH-compatible, but it doesn't mean you have to use SH.
 # You can use bash or zsh and enjoy features of more powerful shells, just change the shebang!
 
-# Templates directory should be in .git_tpl/ in the git home directory
-# for example: /srv/git/.git_tpl/
-
 # POST-RECEIVE HOOK
-# DIR: /srv/git/.git_tpl
 # ARGV: empty
 # STDIN: [OLD HEAD] [NEW HEAD] refs/heads/alpha
 
@@ -35,7 +31,7 @@ export DOCROOT="$BASEPATH/html/$APPLICATION/$BRANCH/$PUBDIR"
 export TARGET="/srv/framework/$FRAMEWORK/application/$APPLICATION/$BRANCH"
 
 # restrict deployment just to given branch
-if [ $BRANCH != @@DEPLOY@@ ] ; then
+if [[ "$BRANCH" != @@DEPLOY@@ ]] ; then
     info "Branch $BRANCH isn't supposed to be deployable, finishing"
     exit
 fi
@@ -50,7 +46,7 @@ info "Reading /etc/profile ..."
 
 is_bare=$(git-config --get --bool core.bare)
 
-if [ -z "$is_bare" ]
+if [ -z "$is_bare" ];
 then
     # for compatibility's sake, guess
     git_dir_full=$(cd $GIT_DIR; pwd)
@@ -75,8 +71,8 @@ debug "REPO: $REPO"
 debug "PWD: $PWD"
 debug
 
-if [ $FRAMEWORK != "" ] ; then
-    if [ -d $TARGET ] ; then
+if [[ "$FRAMEWORK" != "" ]] ; then
+    if [ -d "$TARGET" ] ; then
       cd $TARGET
       GIT_DIR="$PWD/.git"
       info "git_dir: [$GIT_DIR]"
@@ -90,7 +86,7 @@ if [ $FRAMEWORK != "" ] ; then
       cd $TARGET
       GIT_DIR="$PWD/.git"
       git symbolic-ref HEAD refs/heads/$BRANCH
-      git reset $new --hard
+      it reset $new --hard
       GIT_DIR="$REPO"
       if [ -x "$REPO/hooks/clone" ] ; then
         info "[$PWD] Running clone hook"
@@ -122,3 +118,4 @@ elif [ -f "$REPO/hooks/update" ] ; then
 else
   abort "No update hook found! in [$PWD]"
 fi
+

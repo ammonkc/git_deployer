@@ -34,9 +34,9 @@ else
 fi
 
 # set framework defaults to codeigniter
-read -e -p "Framework (codeigniter)? " FW
+read -e -p "Framework? " FW
 if [ -z $FW ]; then
-	FRAMEWORK='codeigniter'
+	FRAMEWORK=""
 else
 	FRAMEWORK=$FW
 fi
@@ -56,8 +56,12 @@ mkdir -p $GIT_HOME/$DOMAIN.git
 cd $GIT_HOME/$DOMAIN.git
 git init --bare
 git config --bool core.bare false
-git config --path core.worktree /srv/framework/$FRAMEWORK/application/$DOMAIN/$ENVIRONMENT/
-git config receive.enycurrentbranch ignore
+if [[ "$FRAMEWORD" != "" ]] ; then
+    git config --path core.worktree /srv/framework/$FRAMEWORK/application/$DOMAIN/$ENVIRONMENT/
+else
+    git config --path core.worktree "/var/www/html/$DOMAIN/$ENVIRONMENT/$WEB_ROOT/"
+fi
+git config receive.denycurrentbranch ignore
 
 # Now we need to copy the virtual host template
 HOOK=$GIT_HOME/$DOMAIN.git/hooks/post-receive
@@ -75,4 +79,5 @@ $SED -i "s/@@PUBDIR@@/$WEB_ROOT/g" $HOOK
 chmod +x $HOOK
 
 echo -e "\nGit repo with Deploy hook Created for $DOMAIN"
+
 
