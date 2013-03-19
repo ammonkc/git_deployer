@@ -30,12 +30,13 @@
 
 # Symlink public directory
 if [[ -d "$DOCROOT" ]] ; then
-     echo "Moved existing Web Root to $DOCROOT.orig"
+     info "Moved existing Web Root to $DOCROOT.orig"
      mv $DOCROOT $DOCROOT.orig
+     debug "$DOCROOT"
 fi
 
-# echo "Created Symlink to $DOCROOT"
-ln -s $TARGET/$PUBDIR $DOCROOT
+info "Created Symlink to $DOCROOT"
+ln -s "$TARGET/$PUBDIR" "$BASEPATH/html/$APPLICATION/$BRANCH"
 
 . "$REPO/hooks/update"
 

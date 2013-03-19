@@ -23,16 +23,12 @@
 # loaded, use ./tasks.rb deployer:install --executable or add
 # Task["deployer:install"].config[:executable] = false to your tasks.rb
 
+##################
+## Triggers     ##
+##################
+trigger="[trigger:composer]"
 
-#if [ $TARGET != $DOCROOT ] ; then
-    # copy assets folder to documentroot
-#    info "pwd: [$PWD]"
-#    info "copying the assets folder to the ${DOCROOT}"
-#    yes | cp -r ${TARGET}/${ASSETS} $DOCROOT/
-    # copy the .htaccess file to documentroot
-#    info "copying the .htaccess file to ${DOCROOT}"
-#    yes | cp -r ${TARGET}/.htaccess $DOCROOT/
-    # copy front controller to document root
-#    info "copying ${FRONTCONTROLLER} to $DOCROOT"
-#    yes | cp ${TARGET}/${FRONTCONTROLLER} $DOCROOT/
-#fi
+if [[ "$msg" == *"$trigger"* ]]; then
+    info "Triggering composer update"
+    debug "COMMIT MESSAGE: $msg"
+fi

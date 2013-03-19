@@ -20,6 +20,7 @@ run()     { info $* ; $*; }
 set -- $(cat /dev/stdin)
 
 old=$1 && new=$2 && ref=$3
+msg=$(git log -n 1 --format=format:%s%b)
 export BRANCH=$(basename $ref)
 export DEBUG=true
 export APPLICATION="@@APPLICATION@@"
@@ -86,7 +87,7 @@ if [[ "$FRAMEWORK" != "" ]] ; then
       cd $TARGET
       GIT_DIR="$PWD/.git"
       git symbolic-ref HEAD refs/heads/$BRANCH
-      it reset $new --hard
+      git reset $new --hard
       GIT_DIR="$REPO"
       if [ -x "$REPO/hooks/clone" ] ; then
         info "[$PWD] Running clone hook"
